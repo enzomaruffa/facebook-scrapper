@@ -150,4 +150,7 @@ for page_id in pages_id:
 		print("comment_count: " + str(post.comment_count))
 		print("share_count: " + str(post.share_count))
 
-	
+page_dict = page.__dict__
+print(page_dict)
+
+# Writing results
