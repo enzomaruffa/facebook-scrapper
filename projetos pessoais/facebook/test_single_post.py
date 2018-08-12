@@ -47,14 +47,12 @@ import json
 import time
 
 call_count = 0
-call_cap = 175
+call_cap = 190
 
-def check_call_count(call_count):
-	print (call_count, call_cap)
-	if (call_count[0] >= call_cap):
-		call_count[0] = 0
+def check_call_count():
+	if (call_count >= call_cap):
+		call_count = 0
 		print("Facebook API calls limit exceeded! Waiting for 3600 seconds (1 hour)")
-		#time.sleep(3600)
 		time.sleep(3600)
 	return True
 
@@ -68,7 +66,7 @@ for page_id in pages_id:
 	pages.append(page)
 
 	# Retrieve posts
-	if (check_call_count([call_count])):
+	if (check_call_count):
 		call_count += 1
 		page_posts = graph.get_object(id=page_id, fields='id, posts')
 	
@@ -77,39 +75,34 @@ for page_id in pages_id:
 	page_posts = page_posts['posts'] # Page is only its own data
 	
 	next_post_group_url = page_posts['paging']['next']
-	while next_post_group_url != None:	
 
-		# Checks if the last page has just been iterated
-		if ('next' in page_posts['paging']):
-			next_post_group_url = page_posts['paging']['next']
-		else:
-			next_post_group_url = None
+	# Checks if the last page has just been iterated
+	if ('next' in page_posts['paging']):
+		next_post_group_url = page_posts['paging']['next']
+	else:
+		next_post_group_url = None
 
-		posts = page_posts['data'] # Get posts list
-		#print("Posts count: " + str(len(posts))) # Print list size
+	posts = page_posts['data'] # Get posts list
+	#print("Posts count: " + str(len(posts))) # Print list size
 
-		# Appending post to list
-		for post in posts:
-			post_obj = Post(post['id'])			
-			page.add_post(post_obj) # Appends post id to list
-
-		if (next_post_group_url != None):
-			if (check_call_count([call_count])):
-				call_count += 1
-				page_posts = requests.get(next_post_group_url).json()
+	# Appending post to list
+	for post in posts:
+		post_obj = Post(post['id'])			
+		page.add_post(post_obj) # Appends post id to list
 
 
 	# ---------------- SCRAPPING INFO ----------------
 
 	# Getting post shares, link and message
 	posts_ids = [post.post_id for post in page.posts]
+	posts_ids = posts_ids[:3]
 
 	# Facebook allows a maximum of 50 IDs per query
 	calls_needed = math.ceil(len(posts_ids) / 51)
 	for i in range(0, calls_needed):
 		requested_posts_ids = posts_ids[i*50:(i*50)+50]
-		if (check_call_count([call_count])):
-			call_count += len(requested_posts_ids)
+		if (check_call_count):
+			call_count += 1
 			posts_metadata = graph.get_objects(ids=requested_posts_ids, fields="shares, permalink_url, message")
 		
 		for post_id in requested_posts_ids:
@@ -132,7 +125,7 @@ for page_id in pages_id:
 
 	for post_id in posts_ids:
 
-		if (check_call_count([call_count])):
+		if (check_call_count):
 			call_count += 1
 			print("Requesting post " + str(post_id) + " comments")
 			post_comments = graph.get_connections(id=post_id, connection_name='comments', summary='total_count') # Get the comments from a post.
@@ -142,7 +135,7 @@ for page_id in pages_id:
 
 		#reactions_types = ['LIKE', 'LOVE', 'WOW', 'HAHA', 'SAD', 'ANGRY', 'THANKFUL']
 
-		if (check_call_count([call_count])):
+		if (check_call_count):
 			call_count += 1
 			print("Requesting post " + str(post_id) + " reaction")
 			post_reactions = graph.get_connections(id=post_id, connection_name='reactions', summary='total_count') # Get reactions from a post.
